@@ -1,0 +1,21 @@
+name: Publish container package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Make GHCR package public
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Waybend container visibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api --method PATCH
+          /orgs/${{ github.repository_owner }}/packages/container/waybend
+          -f visibility=public

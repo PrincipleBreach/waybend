@@ -142,6 +142,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          pattern: waybend-*-*
           merge-multiple: true
       - name: Create checksums
         working-directory: dist
@@ -162,6 +163,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          pattern: waybend-*-*
           merge-multiple: true
       - uses: actions/checkout@v7
         with:

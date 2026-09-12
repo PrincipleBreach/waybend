@@ -26,7 +26,7 @@ use hickory_proto::{
         Name, RData, Record, RecordType,
         rdata::{A, AAAA, NS, SOA},
     },
-    serialize::binary::{BinDecodable, BinEncodable},
+    serialize::binary::{BinDecodable, BinEncodable, DecodeError},
 };
 use lru::LruCache;
 use tokio::{
@@ -116,6 +116,8 @@ pub enum DnsError {
     InvalidZone,
     #[error("invalid DNS message: {0}")]
     Protocol(#[from] hickory_proto::ProtoError),
+    #[error("invalid DNS message: {0}")]
+    Decode(#[from] DecodeError),
     #[error("DNS I/O error: {0}")]
     Io(#[from] io::Error),
 }
@@ -214,7 +216,7 @@ impl DnsServer {
     fn respond(&self, packet: &[u8], source: SocketAddr) -> Result<Vec<u8>, DnsError> {
         let request = Message::from_bytes(packet)?;
         let sequence = request
-            .queries()
+            .queries
             .first()
             .filter(|query| {
                 self.config.zone.zone_of(query.name())
@@ -265,32 +267,29 @@ pub fn handle_packet(
     evidence: Option<&(dyn Fn(DnsEvidence) + Send + Sync)>,
 ) -> Result<Vec<u8>, DnsError> {
     let request = Message::from_bytes(packet)?;
-    let mut response = Message::new();
-    response
-        .set_id(request.id())
-        .set_message_type(MessageType::Response)
-        .set_op_code(OpCode::Query)
-        .set_recursion_desired(request.recursion_desired())
-        .set_recursion_available(false);
+    let mut response = Message::response(request.metadata.id, request.metadata.op_code);
+    response.metadata.recursion_desired = request.metadata.recursion_desired;
+    response.metadata.recursion_available = false;
 
-    if request.message_type() != MessageType::Query || request.op_code() != OpCode::Query {
-        response.set_response_code(ResponseCode::NotImp);
+    if request.metadata.message_type != MessageType::Query
+        || request.metadata.op_code != OpCode::Query
+    {
+        response.metadata.response_code = ResponseCode::NotImp;
         return Ok(response.to_bytes()?);
     }
 
-    let Some(query) = request.queries().first() else {
-        response.set_response_code(ResponseCode::FormErr);
+    let Some(query) = request.queries.first() else {
+        response.metadata.response_code = ResponseCode::FormErr;
         return Ok(response.to_bytes()?);
     };
     response.add_query(query.clone());
 
     if !config.zone.zone_of(query.name()) {
-        response
-            .set_authoritative(false)
-            .set_response_code(ResponseCode::Refused);
+        response.metadata.authoritative = false;
+        response.metadata.response_code = ResponseCode::Refused;
         return Ok(response.to_bytes()?);
     }
-    response.set_authoritative(true);
+    response.metadata.authoritative = true;
 
     if query.name() == &config.zone {
         match query.query_type() {
@@ -318,12 +317,12 @@ pub fn handle_packet(
             Some(ip)
         }
         Resolution::NoData => {
-            response.add_name_server(soa_record(config));
+            response.add_authority(soa_record(config));
             None
         }
         Resolution::NameError => {
-            response.set_response_code(ResponseCode::NXDomain);
-            response.add_name_server(soa_record(config));
+            response.metadata.response_code = ResponseCode::NXDomain;
+            response.add_authority(soa_record(config));
             None
         }
     };
@@ -495,11 +494,8 @@ mod tests {
     }
 
     fn query(name: &str, record_type: RecordType) -> Vec<u8> {
-        let mut message = Message::new();
-        message
-            .set_id(42)
-            .set_message_type(MessageType::Query)
-            .add_query(Query::query(Name::from_ascii(name).unwrap(), record_type));
+        let mut message = Message::new(42, MessageType::Query, OpCode::Query);
+        message.add_query(Query::query(Name::from_ascii(name).unwrap(), record_type));
         message.to_bytes().unwrap()
     }
 
@@ -518,13 +514,10 @@ mod tests {
     #[test]
     fn static_ipv4_answer_is_authoritative() {
         let response = answer(query("127-0-0-1.static.rb.example.test.", RecordType::A), 9);
-        assert!(response.authoritative());
-        assert_eq!(response.response_code(), ResponseCode::NoError);
-        assert_eq!(
-            response.answers()[0].data(),
-            &RData::A(A(Ipv4Addr::LOCALHOST))
-        );
-        assert_eq!(response.answers()[0].ttl(), 30);
+        assert!(response.metadata.authoritative);
+        assert_eq!(response.metadata.response_code, ResponseCode::NoError);
+        assert_eq!(&response.answers[0].data, &RData::A(A(Ipv4Addr::LOCALHOST)));
+        assert_eq!(response.answers[0].ttl, 30);
     }
 
     #[test]
@@ -533,13 +526,10 @@ mod tests {
         let first = answer(packet.clone(), 0);
         let second = answer(packet, 1);
         assert_eq!(
-            first.answers()[0].data(),
+            &first.answers[0].data,
             &RData::A(A("198.51.100.1".parse().unwrap()))
         );
-        assert_eq!(
-            second.answers()[0].data(),
-            &RData::A(A(Ipv4Addr::LOCALHOST))
-        );
+        assert_eq!(&second.answers[0].data, &RData::A(A(Ipv4Addr::LOCALHOST)));
     }
 
     #[test]
@@ -549,11 +539,11 @@ mod tests {
             RecordType::A,
         );
         assert_eq!(
-            answer(packet.clone(), 1).answers()[0].data(),
+            &answer(packet.clone(), 1).answers[0].data,
             &RData::A(A("192.0.2.1".parse().unwrap()))
         );
         assert_eq!(
-            answer(packet, 2).answers()[0].data(),
+            &answer(packet, 2).answers[0].data,
             &RData::A(A("169.254.169.254".parse().unwrap()))
         );
     }
@@ -564,20 +554,20 @@ mod tests {
         let aaaa = answer(query(name, RecordType::AAAA), 0);
         let a = answer(query(name, RecordType::A), 0);
         assert_eq!(
-            aaaa.answers()[0].data(),
+            &aaaa.answers[0].data,
             &RData::AAAA(AAAA(Ipv6Addr::LOCALHOST))
         );
-        assert!(a.answers().is_empty());
-        assert_eq!(a.response_code(), ResponseCode::NoError);
+        assert!(a.answers.is_empty());
+        assert_eq!(a.metadata.response_code, ResponseCode::NoError);
     }
 
     #[test]
     fn unknown_name_returns_nxdomain() {
         let response = answer(query("invalid.rb.example.test.", RecordType::A), 0);
-        assert_eq!(response.response_code(), ResponseCode::NXDomain);
+        assert_eq!(response.metadata.response_code, ResponseCode::NXDomain);
         assert!(
             response
-                .name_servers()
+                .authorities
                 .iter()
                 .any(|record| record.record_type() == RecordType::SOA)
         );
@@ -587,23 +577,23 @@ mod tests {
     fn serves_zone_authority_and_refuses_out_of_zone_names() {
         let soa = answer(query("rb.example.test.", RecordType::SOA), 0);
         let ns = answer(query("rb.example.test.", RecordType::NS), 0);
-        assert_eq!(soa.answers()[0].record_type(), RecordType::SOA);
-        assert_eq!(ns.answers()[0].record_type(), RecordType::NS);
+        assert_eq!(soa.answers[0].record_type(), RecordType::SOA);
+        assert_eq!(ns.answers[0].record_type(), RecordType::NS);
 
         let apex_a = answer(query("rb.example.test.", RecordType::A), 0);
-        assert_eq!(apex_a.response_code(), ResponseCode::NoError);
-        assert!(apex_a.answers().is_empty());
-        assert_eq!(apex_a.name_servers()[0].record_type(), RecordType::SOA);
+        assert_eq!(apex_a.metadata.response_code, ResponseCode::NoError);
+        assert!(apex_a.answers.is_empty());
+        assert_eq!(apex_a.authorities[0].record_type(), RecordType::SOA);
 
         let nameserver_a = answer(query("ns1.rb.example.test.", RecordType::A), 0);
         assert_eq!(
-            nameserver_a.answers()[0].data(),
+            &nameserver_a.answers[0].data,
             &RData::A(A("192.0.2.1".parse().unwrap()))
         );
 
         let outside = answer(query("static.other.example.", RecordType::A), 0);
-        assert_eq!(outside.response_code(), ResponseCode::Refused);
-        assert!(!outside.authoritative());
+        assert_eq!(outside.metadata.response_code, ResponseCode::Refused);
+        assert!(!outside.metadata.authoritative);
     }
 
     #[test]

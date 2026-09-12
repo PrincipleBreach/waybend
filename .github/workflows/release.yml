@@ -82,7 +82,7 @@ jobs:
           path: staging
           format: spdx-json
           output-file: waybend-${{ github.ref_name }}-${{ matrix.target }}.spdx.json
-      - uses: sigstore/cosign-installer@v4
+      - uses: sigstore/cosign-installer@v4.1.2
       - name: Sign artifacts with GitHub OIDC
         shell: bash
         run: |
@@ -127,7 +127,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
           provenance: mode=max
-      - uses: sigstore/cosign-installer@v4
+      - uses: sigstore/cosign-installer@v4.1.2
       - name: Sign container with GitHub OIDC
         env:
           DIGEST: ${{ steps.push.outputs.digest }}

@@ -1,0 +1,9 @@
+{$WAYBEND_HOSTNAME} {
+	encode zstd gzip
+	reverse_proxy waybend:8080
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+}

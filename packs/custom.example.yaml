@@ -1,0 +1,29 @@
+name: custom-example
+version: "1.0.0"
+description: Example routes for a private lab
+routes:
+  - id: lab-admin-console
+    title: Lab admin console
+    category: custom
+    description: Redirects to an internal administration endpoint.
+    tags: [custom, lab, http]
+    target: http://10.20.30.40:8080/admin
+    status: 307
+    hops: 2
+
+  - id: lab-redis-info
+    title: Lab Redis INFO
+    category: custom-service
+    description: Sends an INFO command to the lab Redis endpoint through Gopher.
+    tags: [custom, lab, redis, gopher]
+    target: gopher://10.20.30.41:6379/_INFO%0d%0a
+    hops: 1
+
+  - id: lab-metadata-header
+    title: Lab metadata header response
+    category: custom-header
+    description: Adds a lab-specific header to the redirect response.
+    tags: [custom, lab, header]
+    target: http://169.254.169.254/
+    headers:
+      X-Lab-Probe: waybend

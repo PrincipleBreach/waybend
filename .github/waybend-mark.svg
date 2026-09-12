@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">
+  <title>Waybend</title>
+  <desc>An angular redirect path bends into a W and exits through a red arrow.</desc>
+  <rect width="240" height="240" fill="#0D1117"/>
+  <rect width="240" height="4" fill="#B70000"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M31 31H209V209H31V31ZM36 36V204H204V36H36Z"/>
+  <path d="M61.5 70H74.5V102.3L96 123.8L120 99.8L144 123.8L165.5 102.3V70H178.5V107.7L144 142.2L120 118.2L96 142.2L61.5 107.7V70Z" fill="#FFFFFF"/>
+  <path d="M143.5 63.5H178.5V98.5H165.5V76.5H143.5V63.5Z" fill="#B70000"/>
+  <path d="M120 151L160 191H120V151Z" fill="#B70000"/>
+</svg>

@@ -1,0 +1,48 @@
+name: waybend
+
+services:
+  waybend:
+    build: .
+    image: ${WAYBEND_IMAGE:-ghcr.io/principlebreach/waybend:latest}
+    restart: unless-stopped
+    command: ["serve", "--config", "/etc/waybend/config.yml"]
+    environment:
+      WAYBEND_LOG: ${WAYBEND_LOG:-waybend=info,tower_http=info}
+      WAYBEND_PUBLIC_URL: ${WAYBEND_PUBLIC_URL:-http://localhost:8080}
+    ports:
+      - "${WAYBEND_HTTP_PORT:-8080}:8080/tcp"
+      - "${WAYBEND_DNS_PORT:-5353}:5353/tcp"
+      - "${WAYBEND_DNS_PORT:-5353}:5353/udp"
+    volumes:
+      - ${WAYBEND_CONFIG_FILE:-./waybend.yml}:/etc/waybend/config.yml:ro
+      - waybend-data:/var/lib/waybend
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2.10-alpine
+    profiles: ["tls"]
+    restart: unless-stopped
+    depends_on: [waybend]
+    environment:
+      WAYBEND_HOSTNAME: ${WAYBEND_HOSTNAME:-waybend.localhost}
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "443:443/udp"
+    volumes:
+      - ./docs/deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  waybend-data:
+  caddy-data:
+  caddy-config:

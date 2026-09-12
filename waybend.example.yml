@@ -1,0 +1,37 @@
+server:
+  listen: 0.0.0.0:8080
+  public_url: http://localhost:8080
+  trust_proxy: false
+  body_limit: 1048576
+  cors_origins: []
+
+redirects:
+  default_status: 302
+  default_hops: 3
+  max_hops: 10
+  preserve_query: false
+  allow_target_override: true
+
+catalog:
+  include_builtin: true
+  external_packs: []
+  enabled_categories: []
+  required_tags: []
+  disabled_ids: []
+
+storage:
+  database: ./data/waybend.sqlite3
+  retention_days: 30
+  max_body_bytes: 262144
+
+security:
+  admin_token: null
+
+dns:
+  enabled: false
+  udp_listen: 0.0.0.0:5353
+  tcp_listen: 0.0.0.0:5353
+  domain: null
+  ttl: 1
+  first_ip: 192.0.2.1
+  second_ip: 127.0.0.1

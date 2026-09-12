@@ -1,0 +1,5 @@
+interface:
+  display_name: "Waybend"
+  short_description: "Drive SSRF payload and evidence workflows"
+  brand_color: "#B70000"
+  default_prompt: "Use $waybend to select and run an SSRF payload with correlated evidence."

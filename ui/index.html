@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Waybend redirect catalog and callback evidence console">
+  <meta name="theme-color" content="#000000">
+  <title>Waybend / Principle Breach</title>
+  <link rel="stylesheet" href="/assets/app.css?v=pb3">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Waybend home">
+      <svg class="waybend-mark" viewBox="0 0 42 42" role="img" aria-label="Waybend">
+        <path class="mark-frame" d="M1 1h40v40H1z"/>
+        <path class="mark-route" d="M8 10v8l7 7 6-6 6 6 7-7v-8"/>
+        <path class="mark-arrow" d="M29 10h5v5"/>
+        <path class="mark-cut" d="M21 28l8 8h-8z"/>
+      </svg>
+      <span class="brand-name">WAYBEND</span><span class="brand-separator" aria-hidden="true">/</span><span class="brand-house">PRINCIPLE BREACH</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <button class="nav active" data-view="catalog" aria-current="page">Catalog</button>
+      <button class="nav" data-view="builder">Builder</button>
+      <button class="nav" data-view="evidence">Evidence <span id="event-count" class="count">0</span></button>
+    </nav>
+    <div class="health" id="health" role="status"><i aria-hidden="true"></i><span>Connecting</span></div>
+  </header>
+
+  <main id="main">
+    <section id="catalog-view" class="view">
+      <div class="hero">
+        <div><p class="eyebrow eyebrow-tick">Redirect workbench</p><h1>Bend the request.<br><span>Keep every byte.</span></h1></div>
+        <p class="hero-copy">Search the payload catalog, copy an endpoint, and trace the request from first redirect to callback.</p>
+      </div>
+      <div class="workspace-bar">
+        <label class="search"><span aria-hidden="true">/</span><span class="sr-only">Search routes</span><input id="route-search" type="search" placeholder="Search routes, targets, tags" autocomplete="off"></label>
+        <label class="select-label"><span class="sr-only">Filter by category</span><select id="category-filter"><option value="">All categories</option></select></label>
+        <span id="route-count" class="result-count" aria-live="polite"></span>
+      </div>
+      <div id="route-grid" class="route-grid" aria-live="polite"></div>
+      <div id="route-empty" class="empty" hidden><strong>No matching routes</strong><span>Change the search or category filter.</span></div>
+      <div id="route-pagination" class="pagination" role="group" aria-label="Catalog pagination">
+        <label>Rows <select id="route-page-size"><option>12</option><option>24</option><option>48</option></select></label>
+        <div class="page-controls"><button class="page-button" id="route-prev" type="button" aria-label="Previous catalog page">Prev</button><span id="route-page-status" class="page-status" aria-live="polite"></span><button class="page-button" id="route-next" type="button" aria-label="Next catalog page">Next</button></div>
+      </div>
+    </section>
+
+    <section id="builder-view" class="view" hidden>
+      <div class="section-head"><div><p class="eyebrow eyebrow-tick">Dynamic redirect</p><h1>Build a bend.</h1></div><p>Encode an exact terminal target into a deterministic redirect chain.</p></div>
+      <form id="builder-form" class="builder-card">
+        <label class="field-label" for="builder-target">Terminal target</label>
+        <textarea id="builder-target" rows="6" spellcheck="false" placeholder="Gopher://127.0.0.1:6379/_INFO%0D%0APING" required></textarea>
+        <div class="builder-options">
+          <label>Status<select id="builder-status"><option>302</option><option>301</option><option>303</option><option>307</option><option>308</option></select></label>
+          <label>Hops <span id="builder-hop-limit">1–10</span><input id="builder-hops" type="number" min="1" max="10" value="3" required></label>
+          <button class="button primary" id="builder-submit" type="submit">Generate URL</button>
+        </div>
+        <div id="builder-result" class="builder-result" hidden><div><span class="result-label">READY</span><code id="builder-url"></code></div><button class="copy" type="button" id="copy-builder">Copy URL</button></div>
+        <p class="hint">Base64url path encoding preserves scheme casing, query strings, encoded bytes, and template variables.</p>
+      </form>
+    </section>
+
+    <section id="evidence-view" class="view" hidden>
+      <div class="section-head"><div><p class="eyebrow eyebrow-tick">Captured callbacks</p><h1>Evidence.</h1></div><button id="refresh-events" class="button" type="button">Refresh</button></div>
+      <div class="workspace-bar">
+        <label class="search"><span aria-hidden="true">/</span><span class="sr-only">Search evidence</span><input id="event-search" type="search" placeholder="Search token, source, path, body" autocomplete="off"></label>
+        <label class="select-label"><span class="sr-only">Filter by event kind</span><select id="kind-filter"><option value="">All kinds</option><option value="http">HTTP callback</option><option value="redirect">Redirect</option><option value="dns">DNS</option></select></label>
+        <span id="event-result-count" class="result-count" aria-live="polite"></span>
+      </div>
+      <div class="event-table-head" aria-hidden="true"><span>Kind</span><span>Received</span><span>Request</span><span>Source</span></div>
+      <div id="event-list" class="event-list" aria-live="polite"></div>
+      <div id="event-empty" class="empty" hidden><strong>No evidence captured</strong><span>Callbacks and DNS observations appear here.</span></div>
+      <div id="event-pagination" class="pagination" role="group" aria-label="Evidence pagination">
+        <label>Rows <select id="event-page-size"><option>10</option><option>25</option><option>50</option></select></label>
+        <div class="page-controls"><button class="page-button" id="event-prev" type="button" aria-label="Previous evidence page">Prev</button><span id="event-page-status" class="page-status" aria-live="polite"></span><button class="page-button" id="event-next" type="button" aria-label="Next evidence page">Next</button></div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>WAYBEND</span><span>Built by <a href="https://principlebreach.com">Principle Breach</a> / offensive security research.</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="auth-dialog"><form method="dialog" id="auth-form"><p class="eyebrow eyebrow-tick">Protected instance</p><h2>Admin access</h2><p>The token stays in this browser session.</p><label class="field-label" for="auth-token">Bearer token</label><input id="auth-token" type="password" autocomplete="current-password" required><div class="dialog-actions"><button class="button primary" value="submit">Continue</button></div></form></dialog>
+  <script src="/assets/app.js?v=pb2" defer></script>
+</body>
+</html>

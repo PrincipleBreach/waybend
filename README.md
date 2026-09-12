@@ -18,7 +18,7 @@ web workbench, JSON API, authoritative DNS responder, and stdio MCP interface.
 
 ## Install
 
-Homebrew becomes available with the first tagged release:
+Install with Homebrew:
 
 ```bash
 brew install principlebreach/tap/waybend
